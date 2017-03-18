@@ -54,7 +54,7 @@ RES_INT:    DC.W 0; integer part of last result
 
 
             ORG EQU_START
-            FCC "120.30+11.80="  ; Equation strig
+            FCC "80.08-40.09="  ; Equation strig
             
 ; code section
             ORG   ROMStart
@@ -73,7 +73,7 @@ _Startup:
             JSR READ_DEC_PART1 ; find decimal part1 and store in N1D
             
             ; pass spaces before operator
-PASS_SPACE: INX
+PASS_SPACE: 
             LDAA 0,X
             CMPA #$20 ;compara with space
             BEQ PASS_SPACE
@@ -100,7 +100,6 @@ PASS_SPACE2:INX
             INX                ; pass "." delimiter
             JSR READ_DEC_PART2 ; find decimal part2 and store in N2D
             
-            INX
             LDAA 0,X     ; element which cames after last digit
             CMPA #$3D    ; check "=" sign to continue calculation
             BNE  GO_END  ; close program if "=" there is no "=" sign                                         
@@ -110,8 +109,27 @@ PASS_SPACE2:INX
             BEQ ADD_NUMBERS
             
 SUB_NUMBERS: ;Subtract numbers
-
-
+            LDAA N1D
+            SUBA N2D
+            BCC SUB_OK ; N1D < N2D --> take 1 ten from left side(N1I)
+            
+            LDD N1I
+            SUBD #1          ; If N1I < 0 , there is an error
+            BCS SHOW_RESULT
+            STD N1I
+            
+            LDAA N1D
+            INCA
+            SUBA N2D
+            
+SUB_OK:
+            STAA RES_DEC
+            
+            LDD N1I
+            SUBD N2I
+            BCS SHOW_RESULT
+            
+            STD RES_INT
             BRA SHOW_RESULT
      
             
@@ -213,9 +231,20 @@ READ_DEC_PART1:
             LDAA  DEC_NUM
             
             LDAB  0,X
+            CMPB #$2E ; "." CHECK
+            BEQ READ_DEC_PART1_END
+            CMPB #$2B ; "+" check
+            BEQ READ_DEC_PART1_END
+            CMPB #$2D ; "-" check
+            BEQ READ_DEC_PART1_END
+            CMPB #$20 ; " " space check
+            BEQ READ_DEC_PART1_END
+
             SUBB #$30
+            ABA
+            INX 
             
-            ABA 
+READ_DEC_PART1_END:
             STAA N1D
             RTS
             
@@ -233,10 +262,9 @@ READ_INT_PART2:
             
             STAA ITEM2 ; store integer to memory
            
-            STAA INDEX
+            LDAA INDEX
             BEQ GO_NEXT2
-  
-
+            
             LDAA #10  ; 10la carpacaz
             STAA SHIFT_SIZE ; kac ile carpilacak yukle
             LDD N2I
@@ -279,9 +307,16 @@ READ_DEC_PART2:
             LDAA  DEC_NUM
             
             LDAB  0,X
-            SUBB #$30
+            CMPB #$3D ; " " space check
+            BEQ READ_DEC_PART2_END
+            CMPB #$20 ; " " space check
+            BEQ READ_DEC_PART2_END
             
-            ABA 
+            SUBB #$30
+            ABA
+            INX
+             
+READ_DEC_PART2_END:
             STAA N2D
             RTS
 
