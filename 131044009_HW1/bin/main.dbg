@@ -8711,10 +8711,12 @@ INT_NUM     DC.W 0; 10 ile carpilacak int sayi
 DEC_PART    DC.B 0; 10 ile carpim sonuclarýnýn yazýlacagý yer
 DEC_NUM     DC.B 0; 10 ile carpilacak decimal sayi
 
+OPERATOR    DC.B 0;
+
 
 
             ORG EQU_START
-            FCC "188.52 - 58647.13="
+            FCC "58647.52 - 58647.13="
             
 
 
@@ -8729,6 +8731,7 @@ _Startup:
             CLI                     ; enable interrupts
                      
 
+ 
             LDX #EQU_START ; regX = #$1200
             
             CLRA
@@ -8740,8 +8743,23 @@ _Startup:
             JSR READ_INT_PART1
             INX
             JSR READ_DEC_PART1
+            INX
+            INX
+            LDAA 0,X
+            STAA OPERATOR
+            INX
+            INX
             
-            BRA END
+            CLRA
+            STAA ITEM1
+            STAA ITEM2
+            STAA INDEX1
+            
+            JSR READ_INT_PART2
+            INX
+            JSR READ_DEC_PART2
+            
+            CALL END
             
 
 
@@ -8763,7 +8781,11 @@ READ_INT_PART1:
             LDAA #10  ; 10la carpacaz
             STAA SHIFT_SIZE ; kac ile carpilacak yukle
             LDD N1I
-            STD INT_PART ; Shift edilecek sayiyi tut           
+            STD INT_PART ; Shift edilecek sayiyi tut
+            
+            LDD #0
+            STD INT_NUM
+                       
             JSR INT_SHIFTER  ; sayiyi kaydýr
                 
 GO_NEXT:    
@@ -8815,6 +8837,9 @@ READ_DEC_PART1:
             INX ; sýradaki karakteri al
             
             STAA DEC_PART
+            
+            LDAA #0
+            STAA DEC_NUM
                         
             LDAA #10
             STAA SHIFT_SIZE
@@ -8829,9 +8854,79 @@ READ_DEC_PART1:
             STAA N1D
             RTS
             
+            
+            
+READ_INT_PART2:
+            
+            LDAA 0,X
+            
+            CMPA #$2E ; if find '.'
+            BEQ READ_2_DONE        
+
+            SUBA #$30 ; char to integer
+            
+            STAA ITEM2 ; store integer to memory
+           
+            STAA INDEX1
+            BEQ GO_NEXT2
+  
+
+            LDAA #10  ; 10la carpacaz
+            STAA SHIFT_SIZE ; kac ile carpilacak yukle
+            LDD N2I
+            STD INT_PART ; Shift edilecek sayiyi tut
+            
+            LDD #0
+            STD INT_NUM
+                       
+            JSR INT_SHIFTER  ; sayiyi kaydýr
+                
+GO_NEXT2:    
+            LDD INT_NUM ; eski sayiyi al
+            ADDD ITEM1 ; carpilan sayiya karakteri ekle
+            STD N2I                        
+            
+            LDAA INDEX1  ; indexi arttýr
+            INCA
+            STAA INDEX1
+            INX ; dizi indexini arttýr
+            BRA READ_INT_PART2 ; nokta gorene kadar bu dondu dönecek
+            
+READ_2_DONE:RTS  ; bitir
+                        
+
+READ_DEC_PART2:
+            LDAA 0,X
+            SUBA #$30
+            
+            INX ; sýradaki karakteri al
+            
+            STAA DEC_PART
+            
+            LDAA #0
+            STAA DEC_NUM
+                        
+            LDAA #10
+            STAA SHIFT_SIZE
+            
+            JSR  DEC_SHIFTER            
+            LDAA  DEC_NUM
+            
+            LDAB  0,X
+            SUBB #$30
+            
+            ABA 
+            STAA N2D
+            RTS
+
+
+
+
+
+
+
 
 END:
-
 ;**************************************************************
 ;*                 Interrupt Vectors                          *
 ;**************************************************************
