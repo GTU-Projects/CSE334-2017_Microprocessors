@@ -8705,6 +8705,12 @@ SHIFT_NUM:     DC.W 0; shift edilecek sayi
 ITEM1:      DC.B 0; cast edilen sayi
 ITEM2:      DC.B 0; cast edilen sayi devamý
 
+INT_PART    DC.W 0; 10 ile carpim sonuclarýnýn yazýlacagý yer
+INT_NUM     DC.W 0; 10 ile carpilacak int sayi
+
+DEC_PART    DC.B 0; 10 ile carpim sonuclarýnýn yazýlacagý yer
+DEC_NUM     DC.B 0; 10 ile carpilacak decimal sayi
+
 
 
             ORG EQU_START
@@ -8729,15 +8735,17 @@ _Startup:
             STAA INDEX1; set integer part1 index
             
             
-            JSR READ_UNTIL_DOT1
+            ;LDX #$1204
+            ;LDAA 0,X
+            JSR READ_INT_PART1
+            INX
+            JSR READ_DEC_PART1
             
             BRA END
             
-            
-            
 
 
-READ_UNTIL_DOT1:
+READ_INT_PART1:
 
             LDAA 0,X
             
@@ -8752,14 +8760,14 @@ READ_UNTIL_DOT1:
             BEQ GO_NEXT
             
 
-            LDAA #9  ; 10la carpacaz
+            LDAA #10  ; 10la carpacaz
             STAA SHIFT_SIZE ; kac ile carpilacak yukle
             LDD N1I
-            STD SHIFT_NUM ; Shift edilecek sayiyi tut           
-            JSR SHIFTER_FUNC  ; sayiyi kaydýr
+            STD INT_PART ; Shift edilecek sayiyi tut           
+            JSR INT_SHIFTER  ; sayiyi kaydýr
                 
 GO_NEXT:    
-            LDD N1I ; eski sayiyi al
+            LDD INT_NUM ; eski sayiyi al
             ADDD ITEM1 ; carpilan sayiya karakteri ekle
             STD N1I                        
             
@@ -8767,30 +8775,62 @@ GO_NEXT:
             INCA
             STAA INDEX1
             INX ; dizi indexini arttýr
-            BRA READ_UNTIL_DOT1 ; nokta gorene kadar bu dondu dönecek
+            BRA READ_INT_PART1 ; nokta gorene kadar bu dondu dönecek
             
 READ_1_DONE:RTS  ; bitir
             
             
-SHIFTER_FUNC:
+INT_SHIFTER:
             LDAA SHIFT_SIZE ;
-            BEQ SHIFTER_DONE ; branch if shift size zero
+            BEQ INT_SHIFTER_DONE ; branch if shift size zero
             
             DECA ; decrement size
             STAA SHIFT_SIZE ; store size
             
-            LDD N1I  ; load number
-            ADDD SHIFT_NUM ; D = D + NUMBER
-            STD N1I  ; N1I = D
-            BRA SHIFTER_FUNC
+            LDD INT_NUM; load number
+            ADDD INT_PART; D = D + PART
+            STD INT_NUM; N1I = D
+            BRA INT_SHIFTER
            
-SHIFTER_DONE: RTS
+INT_SHIFTER_DONE: RTS
+
+
+DEC_SHIFTER:
+            LDAA SHIFT_SIZE
+            BEQ DEC_SHIFTER_DONE
+            
+            DECA
+            STAA SHIFT_SIZE
+            LDAA DEC_NUM   ; decimal parttan sayiyi al
+            ADDA DEC_PART    ; carpilacak sayiyi ekle
+            STAA DEC_NUM   ; parti guncelle
+            BRA DEC_SHIFTER                  
+DEC_SHIFTER_DONE: RTS
+
+            
+READ_DEC_PART1:
+            LDAA 0,X
+            SUBA #$30
+            
+            INX ; sýradaki karakteri al
+            
+            STAA DEC_PART
+                        
+            LDAA #10
+            STAA SHIFT_SIZE
+            
+            JSR  DEC_SHIFTER            
+            LDAA  DEC_NUM
+            
+            LDAB  0,X
+            SUBB #$30
+            
+            ABA 
+            STAA N1D
+            RTS
             
 
-            
-
-
- END:
+END:
 
 ;**************************************************************
 ;*                 Interrupt Vectors                          *
