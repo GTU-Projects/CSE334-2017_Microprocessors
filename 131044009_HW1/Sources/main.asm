@@ -7,6 +7,12 @@
 ;* located in the examples subdirectory of the                   *
 ;* Freescale CodeWarrior for the HC12 Program directory          *
 ;*****************************************************************
+;*                                                               *
+;*                   HASAN MEN - 131044009                       *
+;*                                                               *
+;*                       CSE334 - HW1                            *
+;*                                                               *
+;*****************************************************************
 
 ; export symbols
             XDEF Entry, _Startup            ; export 'Entry' symbol
@@ -17,14 +23,17 @@
 ; Include derivative-specific definitions 
 		INCLUDE 'derivative.inc' 
 
-ROMStart    EQU  $4000  ; absolute address to place my code/constant data
+ROMStart    EQU $4000  ; absolute address to place my code/constant data
+EQU_START   EQU $1200  ; memory address of eqation
 
 ; variable/data section
 
             ORG RAMStart
  ; Insert here your data definition.
-Counter     DS.W 1
-FiboRes     DS.W 1
+
+
+            ORG EQU_START
+            FCC "60432.52 - 58647.13="
 
 
 ; code section
