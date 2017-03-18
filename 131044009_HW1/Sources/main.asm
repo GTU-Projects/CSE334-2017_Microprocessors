@@ -31,31 +31,33 @@ N1I:        DC.W 0; INTEGER PART OF NUM1
 N1D:        DC.B 0; DECIMAL PART OF NUM1
 N2I:        DC.W 0; INTEGER PART1 OF NUM2
 N2D:        DC.B 0; DECIMAL PART OF NUM2
-INDEX1:     DC.B 0; index for integer part1
-SHIFT_SIZE: DC.B 0; shift edilecek basamak
-SHIFT_NUM:     DC.W 0; shift edilecek sayi
+INDEX:      DC.B 0; index for integer part1
 
-ITEM1:      DC.B 0; cast edilen sayi
-ITEM2:      DC.B 0; cast edilen sayi devamý
+SHIFT_SIZE: DC.B 0; 2 -> shift with *10 --> 20
 
-INT_PART    DC.W 0; 10 ile carpim sonuclarýnýn yazýlacagý yer
-INT_NUM     DC.W 0; 10 ile carpilacak int sayi
+ITEM1:      DC.B 0; cast value part1
+ITEM2:      DC.B 0; cast value part2
 
-DEC_PART    DC.B 0; 10 ile carpim sonuclarýnýn yazýlacagý yer
-DEC_NUM     DC.B 0; 10 ile carpilacak decimal sayi
+INT_PART:   DC.W 0; number(16bit max) which will be multiplied with 10
+INT_NUM:    DC.W 0; result(16bit max) of multiply operation
 
-OPERATOR    DC.B 0;
+DEC_PART:   DC.B 0; number(8bit max) which will be multiplied with 10
+DEC_NUM:    DC.B 0; result(16bit max) of multiply operation
 
+OPERATOR:   DC.B 0;
+
+DEC_CARRY1: DC.B 0; carry status
+DEC_CARRY2: DC.B 0
+
+RES_DEC:    DC.B 0; decimal part of last result
+RES_INT:    DC.W 0; integer part of last result
 
 
             ORG EQU_START
-            FCC "58647.52 - 58647.13="
+            FCC "120.30+11.80="  ; Equation strig
             
-
-
 ; code section
             ORG   ROMStart
-
 
 Entry:
 _Startup:
@@ -64,42 +66,97 @@ _Startup:
             CLI                     ; enable interrupts
                      
 
- 
             LDX #EQU_START ; regX = #$1200
             
-            CLRA
-            STAA INDEX1; set integer part1 index
+            JSR READ_INT_PART1 ; find integer part1 and store in N1I
+            INX                ; pass "." delimiter
+            JSR READ_DEC_PART1 ; find decimal part1 and store in N1D
             
-            
-            ;LDX #$1204
-            ;LDAA 0,X
-            JSR READ_INT_PART1
-            INX
-            JSR READ_DEC_PART1
-            INX
-            INX
+            ; pass spaces before operator
+PASS_SPACE: INX
             LDAA 0,X
-            STAA OPERATOR
-            INX
-            INX
+            CMPA #$20 ;compara with space
+            BEQ PASS_SPACE
             
+            STAA OPERATOR  ; store operator
+            
+            ; pass spaces after operator
+PASS_SPACE2:INX
+            LDAA 0,X
+            CMPA #$20 ;compara with space
+            BEQ PASS_SPACE2
+
+            ; CLEAR USED AREAS to USE AGAIN
             CLRA
-            STAA ITEM1
-            STAA ITEM2
-            STAA INDEX1
+            CLRB
+            STD ITEM1
+            STAA INDEX
+            STD INT_PART
+            STD INT_NUM
+            STD DEC_PART
             
-            JSR READ_INT_PART2
+ 
+            JSR READ_INT_PART2 ; find integer part1 and store in N2I 
+            INX                ; pass "." delimiter
+            JSR READ_DEC_PART2 ; find decimal part2 and store in N2D
+            
             INX
-            JSR READ_DEC_PART2
+            LDAA 0,X     ; element which cames after last digit
+            CMPA #$3D    ; check "=" sign to continue calculation
+            BNE  GO_END  ; close program if "=" there is no "=" sign                                         
+                        
+            LDAA OPERATOR   ; load operator
+            CMPA #$2B       ; if operator is "+", go ADD_NUMBERS part               
+            BEQ ADD_NUMBERS
             
-            CALL END
-            
+SUB_NUMBERS: ;Subtract numbers
 
 
+            BRA SHOW_RESULT
+     
+            
+ADD_NUMBERS: ; Add numbers  
+
+            LDAA N1D     ; A = decimalPart1
+            ADDA N2D     ; A = A + decimalPart2
+            STAA RES_DEC ; store decimal 
+            CMPA #100    ; compare num, 100
+            BLT ADD_INT_PART ; if overflow no occur, continue to add integer parts
+            LDAA #1
+            STAA DEC_CARRY2 ; store overflow bit   
+            
+ADD_INT_PART:
+            LDD N1I     ; load number1 integer part
+            ADDD N2I    ; load number2 integer part
+            BCS SHOW_RESULT ; if there is an overflow, show FF result
+            ADDD DEC_CARRY1 ; add carry, if there is
+            BCS SHOW_RESULT ; if there is an overflow, show FF result
+            STD RES_INT     ; store valid calculation result
+            
+            
+SHOW_RESULT:
+            BCC LOAD_RES_INT  ; check carry bit
+            LDD #$FFFF        ; D = #$FFFF
+            STD RES_INT       ; Store FFFF value
+
+LOAD_RES_INT:
+            LDAA #$FF     ; Make portB output
+            STAA DDRB
+            
+            LDD RES_INT   ; load result
+            STAB PORTB    ; store result
+                  
+GO_END:     CALL END      ; end of calculation
+            
+
+;
+; SUBROUTINE: Read integer part from string until '.' delimiter
+; It's saves integer value(0-65535) in N1I
+;
 READ_INT_PART1:
 
-            LDAA 0,X
-            
+            LDAA 0,X                                          
+                        
             CMPA #$2E ; if find '.'
             BEQ READ_1_DONE        
 
@@ -107,7 +164,7 @@ READ_INT_PART1:
             
             STAA ITEM2 ; store integer to memory
             
-            LDAA INDEX1 ; 0.indexte kaydýrmaya gerek yok
+            LDAA INDEX ; 0.indexte kaydýrmaya gerek yok
             BEQ GO_NEXT
             
 
@@ -126,43 +183,18 @@ GO_NEXT:
             ADDD ITEM1 ; carpilan sayiya karakteri ekle
             STD N1I                        
             
-            LDAA INDEX1  ; indexi arttýr
+            LDAA INDEX  ; indexi arttýr
             INCA
-            STAA INDEX1
+            STAA INDEX
             INX ; dizi indexini arttýr
             BRA READ_INT_PART1 ; nokta gorene kadar bu dondu dönecek
             
 READ_1_DONE:RTS  ; bitir
             
-            
-INT_SHIFTER:
-            LDAA SHIFT_SIZE ;
-            BEQ INT_SHIFTER_DONE ; branch if shift size zero
-            
-            DECA ; decrement size
-            STAA SHIFT_SIZE ; store size
-            
-            LDD INT_NUM; load number
-            ADDD INT_PART; D = D + PART
-            STD INT_NUM; N1I = D
-            BRA INT_SHIFTER
-           
-INT_SHIFTER_DONE: RTS
 
-
-DEC_SHIFTER:
-            LDAA SHIFT_SIZE
-            BEQ DEC_SHIFTER_DONE
-            
-            DECA
-            STAA SHIFT_SIZE
-            LDAA DEC_NUM   ; decimal parttan sayiyi al
-            ADDA DEC_PART    ; carpilacak sayiyi ekle
-            STAA DEC_NUM   ; parti guncelle
-            BRA DEC_SHIFTER                  
-DEC_SHIFTER_DONE: RTS
-
-            
+; SUBROUTINE: Read decimal part from string which first index stored in X register
+; decimal part can be 2 digit
+; stores value in N2D            
 READ_DEC_PART1:
             LDAA 0,X
             SUBA #$30
@@ -188,7 +220,8 @@ READ_DEC_PART1:
             RTS
             
             
-            
+; SUBROUTINE: Read integer part from string until '.' delimiter
+; It's saves integer value(0-65535) in N2I            
 READ_INT_PART2:
             
             LDAA 0,X
@@ -200,7 +233,7 @@ READ_INT_PART2:
             
             STAA ITEM2 ; store integer to memory
            
-            STAA INDEX1
+            STAA INDEX
             BEQ GO_NEXT2
   
 
@@ -219,9 +252,9 @@ GO_NEXT2:
             ADDD ITEM1 ; carpilan sayiya karakteri ekle
             STD N2I                        
             
-            LDAA INDEX1  ; indexi arttýr
+            LDAA INDEX  ; indexi arttýr
             INCA
-            STAA INDEX1
+            STAA INDEX
             INX ; dizi indexini arttýr
             BRA READ_INT_PART2 ; nokta gorene kadar bu dondu dönecek
             
@@ -253,13 +286,43 @@ READ_DEC_PART2:
             RTS
 
 
+;SUBROUTINE: This routine multiplies an extended integer(16 bit) with *10
+; 2222 * 10 = 2220
+;
+; Saves value in the INT_NUM            
+INT_SHIFTER:
+            LDAA SHIFT_SIZE ;
+            BEQ INT_SHIFTER_DONE ; branch if shift size zero
+            
+            DECA ; decrement size
+            STAA SHIFT_SIZE ; store size
+            
+            LDD INT_NUM; load number
+            ADDD INT_PART; D = D + PART
+            STD INT_NUM; N1I = D
+            BRA INT_SHIFTER
+           
+INT_SHIFTER_DONE: RTS
 
 
+;SUBROUTINE: This routine multiplies an integer(8 bit) with *10
+; 22 * 10 = 220
+;
+; Saves value in the INT_NUM
+DEC_SHIFTER:
+            LDAA SHIFT_SIZE
+            BEQ DEC_SHIFTER_DONE
+            
+            DECA
+            STAA SHIFT_SIZE
+            LDAA DEC_NUM   ; decimal parttan sayiyi al
+            ADDA DEC_PART    ; carpilacak sayiyi ekle
+            STAA DEC_NUM   ; parti guncelle
+            BRA DEC_SHIFTER                  
+DEC_SHIFTER_DONE: RTS
 
 
-
-
-END:
+END:  ; I will jump here to finish program
 ;**************************************************************
 ;*                 Interrupt Vectors                          *
 ;**************************************************************
