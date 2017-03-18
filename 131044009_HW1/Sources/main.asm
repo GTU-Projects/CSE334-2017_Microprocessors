@@ -32,8 +32,8 @@ N1D:        DC.B 0; DECIMAL PART OF NUM1
 N2I:        DC.W 0; INTEGER PART1 OF NUM2
 N2D:        DC.B 0; DECIMAL PART OF NUM2
 INDEX1:     DC.B 0; index for integer part1
-SHIFT_AMT:  DC.B 0; shift amount
-SHIFT_CON:  DC.W 0; shift CONSTANT
+SHIFT_SIZE: DC.B 0; shift edilecek basamak
+SHIFT_NUM:     DC.W 0; shift edilecek sayi
 
 ITEM1:      DC.B 0; cast edilen sayi
 ITEM2:      DC.B 0; cast edilen sayi devamý
@@ -86,13 +86,11 @@ READ_UNTIL_DOT1:
             
 
             LDAA #9  ; 10la carpacaz
-            STAA SHIFT_AMT ; kac ile carpilacak yukle
+            STAA SHIFT_SIZE ; kac ile carpilacak yukle
             LDD N1I
-            STD SHIFT_CON            
-            JSR SHIFT_NUMBER  ; sayiyi kaydýr
-            
-            
-            
+            STD SHIFT_NUM ; Shift edilecek sayiyi tut           
+            JSR SHIFTER_FUNC  ; sayiyi kaydýr
+                
 GO_NEXT:    
             LDD N1I ; eski sayiyi al
             ADDD ITEM1 ; carpilan sayiya karakteri ekle
@@ -107,20 +105,19 @@ GO_NEXT:
 READ_1_DONE:RTS  ; bitir
             
             
-SHIFT_NUMBER:
- 
-            LDAA SHIFT_AMT
-            BEQ SHIFT_DONE ; branch if shift zero
+SHIFTER_FUNC:
+            LDAA SHIFT_SIZE ;
+            BEQ SHIFTER_DONE ; branch if shift size zero
             
-            DECA ; decrement amount
-            STAA SHIFT_AMT ; store amount
+            DECA ; decrement size
+            STAA SHIFT_SIZE ; store size
             
             LDD N1I  ; load number
-            ADDD SHIFT_CON ; D = D + NUMBER
+            ADDD SHIFT_NUM ; D = D + NUMBER
             STD N1I  ; N1I = D
-            BRA SHIFT_NUMBER
+            BRA SHIFTER_FUNC
            
-SHIFT_DONE: RTS
+SHIFTER_DONE: RTS
             
 
             
