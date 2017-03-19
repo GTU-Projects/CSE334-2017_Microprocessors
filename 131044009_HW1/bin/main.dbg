@@ -1,12 +1,5 @@
 ;*****************************************************************
-;* This stationery serves as the framework for a                 *
-;* user application (single file, absolute assembly application) *
-;* For a more comprehensive program that                         *
-;* demonstrates the more advanced functionality of this          *
-;* processor, please see the demonstration applications          *
-;* located in the examples subdirectory of the                   *
-;* Freescale CodeWarrior for the HC12 Program directory          *
-;*****************************************************************
+;*                   GTU - Microprocessors                       *
 ;*                                                               *
 ;*                   HASAN MEN - 131044009                       *
 ;*                                                               *
@@ -17,8 +10,6 @@
 ; export symbols
             XDEF Entry, _Startup            ; export 'Entry' symbol
             ABSENTRY Entry        ; for absolute assembly: mark this as application entry point
-
-
 
 ; Include derivative-specific definitions 
 		INCLUDE 'derivative.inc' 
@@ -8716,12 +8707,11 @@ OPERATOR:   DC.B 0;
 DEC_CARRY1: DC.B 0; carry status
 DEC_CARRY2: DC.B 0
 
-RES_DEC:    DC.B 0; decimal part of last result
-RES_INT:    DC.W 0; integer part of last result
-
+RES_INT:    DC.W 0; integer part of last result  $1013
+RES_DEC:    DC.B 0; decimal part of last result  $1015
 
             ORG EQU_START
-            FCC "80.08-40.09="  ; Equation strig
+            FCC "65535.08 - 00.09="  ; Equation strig
             
 ; code section
             ORG   ROMStart
@@ -8740,10 +8730,12 @@ _Startup:
             JSR READ_DEC_PART1 ; find decimal part1 and store in N1D
             
             ; pass spaces before operator
-PASS_SPACE: 
-            LDAA 0,X
+PASS_SPACE: LDAA 0,X
             CMPA #$20 ;compara with space
-            BEQ PASS_SPACE
+            BNE PASS_SP_END
+            INX
+            BRA PASS_SPACE
+PASS_SP_END:
             
             STAA OPERATOR  ; store operator
             
@@ -8766,7 +8758,14 @@ PASS_SPACE2:INX
             JSR READ_INT_PART2 ; find integer part1 and store in N2I 
             INX                ; pass "." delimiter
             JSR READ_DEC_PART2 ; find decimal part2 and store in N2D
-            
+
+PASS_SPACE3:LDAA 0,X
+            CMPA #$20 ;compara with space
+            BNE PASS_SP_END3
+            INX
+            BRA PASS_SPACE3
+PASS_SP_END3:
+                       
             LDAA 0,X     ; element which cames after last digit
             CMPA #$3D    ; check "=" sign to continue calculation
             BNE  GO_END  ; close program if "=" there is no "=" sign                                         
