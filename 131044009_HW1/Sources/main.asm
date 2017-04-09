@@ -40,11 +40,12 @@ OPERATOR:   DC.B 0;
 DEC_CARRY1: DC.B 0; carry status
 DEC_CARRY2: DC.B 0
 
+            ORG $1500
 RES_INT:    DC.W 0; integer part of last result  $1013
 RES_DEC:    DC.B 0; decimal part of last result  $1015
 
             ORG EQU_START
-            FCC "65535.08 - 00.09="  ; Equation strig
+            FCC "253.18 + 255.82="  ; Equation strig
             
 ; code section
             ORG   ROMStart
@@ -70,6 +71,12 @@ PASS_SPACE: LDAA 0,X
             BRA PASS_SPACE
 PASS_SP_END:
             
+            CMPA #$2B       ; CHECK operator is valid
+            BEQ OP_OK
+            CMPA #$2D
+            BEQ OP_OK
+            CALL SHOW_RESULT 
+OP_OK:
             STAA OPERATOR  ; store operator
             
             ; pass spaces after operator
@@ -118,7 +125,7 @@ SUB_NUMBERS: ;Subtract numbers
             STD N1I
             
             LDAA N1D
-            INCA
+            ADDA #10
             SUBA N2D
             
 SUB_OK:
@@ -155,6 +162,7 @@ SHOW_RESULT:
             BCC LOAD_RES_INT  ; check carry bit
             LDD #$FFFF        ; D = #$FFFF
             STD RES_INT       ; Store FFFF value
+            STAA RES_DEC
 
 LOAD_RES_INT:
             LDAA #$FF     ; Make portB output
@@ -198,6 +206,7 @@ READ_INT_PART1:
 GO_NEXT:    
             LDD INT_NUM ; eski sayiyi al
             ADDD ITEM1 ; carpilan sayiya karakteri ekle
+            BCS SHOW_RESULT
             STD N1I                        
             
             LDAA INDEX  ; indexi arttýr
@@ -207,7 +216,26 @@ GO_NEXT:
             BRA READ_INT_PART1 ; nokta gorene kadar bu dondu dönecek
             
 READ_1_DONE:RTS  ; bitir
+
+
+;SUBROUTINE: This routine multiplies an extended integer(16 bit) with *10
+; 2222 * 10 = 2220
+;
+; Saves value in the INT_NUM            
+INT_SHIFTER:
+            LDAA SHIFT_SIZE ;
+            BEQ INT_SHIFTER_DONE ; branch if shift size zero
             
+            DECA ; decrement size
+            STAA SHIFT_SIZE ; store size
+            
+            LDD INT_NUM; load number
+            ADDD INT_PART; D = D + PART
+            BCS SHOW_RESULT ; check overflow, if occur, jump error exit
+            STD INT_NUM; N1I = D
+            BRA INT_SHIFTER
+           
+INT_SHIFTER_DONE: RTS            
 
 ; SUBROUTINE: Read decimal part from string which first index stored in X register
 ; decimal part can be 2 digit
@@ -318,26 +346,6 @@ READ_DEC_PART2:
 READ_DEC_PART2_END:
             STAA N2D
             RTS
-
-
-;SUBROUTINE: This routine multiplies an extended integer(16 bit) with *10
-; 2222 * 10 = 2220
-;
-; Saves value in the INT_NUM            
-INT_SHIFTER:
-            LDAA SHIFT_SIZE ;
-            BEQ INT_SHIFTER_DONE ; branch if shift size zero
-            
-            DECA ; decrement size
-            STAA SHIFT_SIZE ; store size
-            
-            LDD INT_NUM; load number
-            ADDD INT_PART; D = D + PART
-            STD INT_NUM; N1I = D
-            BRA INT_SHIFTER
-           
-INT_SHIFTER_DONE: RTS
-
 
 ;SUBROUTINE: This routine multiplies an integer(8 bit) with *10
 ; 22 * 10 = 220
