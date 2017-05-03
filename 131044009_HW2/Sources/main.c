@@ -49,58 +49,28 @@ void delay10Tms(int t){
 
 unsigned char isSerialOpen;
 
-unsigned char t;
-unsigned char tofNum;
-unsigned char maxTime;
-
-interrupt (((0x10000-Vtimovf)/2)-1) void TOF_ISR(void){
-
-  TFLG2 |= TFLG2_TOF_MASK;
-  if(++tofNum==3){
-    tofNum=0;
-    ++t;
-  }
-  PORTB=t;
-  if(t==maxTime)
-    TSCR1=0x00;
-  
-}
-
-
-void toftest(){
-  
-  DDRB=0xFF;
-  TFLG2 |= TFLG2_TOF_MASK;
-  
-  t=0;
-  tofNum=0;
-  maxTime=10;
-  
-  TSCR1 =0x80;
-  TSCR2 = 0x87;
-  for(;;){
-    
-  }
-
-}
 
 void main(void) {
 
   unsigned char i=0;
   unsigned char num1,num2;
   
-  char inputMsg[]="\n\r-------------\n\rEnter song ID.\n\r00.All Three song.\n\r01.Mario\n\r10.Pirates\n\r11.Rick Roll\n\rInput:";
-  char invCmdMsg[]="\n\r-------------\n\rInvalid Sond ID!!\n\r";
-	EnableInterrupts;
+ // char inputMsg[]="\n\r-------------\n\rEnter song ID.\n\r00.All Three song.\n\r01.Mario\n\r10.Pirates\n\r11.Rick Roll\n\rInput:";
+ // char invCmdMsg[]="\n\r-------------\n\rInvalid Sond ID!!\n\r";
+	
 	
 	DDRB=0xFF; // led-7segment output
 	DDRP=0xFF; // buzzer and output compare
 	DDRH=0x00; // swithes input
 	
-  PTP=0xFE;
+  //PTP=0xFE;
+  //EnableInterrupts;
+  //hornRickRolled();
+  hornPirates();
+  //hornMario();
   
-  for(;;)
-    toftest();	
+  //for(;;)
+  //  toftest();	
 
   /*for(;;){
     

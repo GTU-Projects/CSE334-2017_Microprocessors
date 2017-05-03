@@ -198,12 +198,13 @@ int melodyPirates[] = {       //Note of the song, 0 is a rest/pulse
    NOTE_B4, NOTE_C5, 0, NOTE_B4, 0, NOTE_A4
 };
 
-void hornMario();
-void hornPirates();
-void hornRickRolled();
-void hornMix();
+ void hornMario();
+ void hornPirates();
+ void hornRickRolled();
+ void hornMix();
 
 extern unsigned char isSerialOpen;
+extern unsigned char segments[SEGMENT_SIZE];
 
 interrupt (((0x10000-Vtimovf)/2)-1) void TOF_ISR(void);  // output compare interrupt
 interrupt (((0x10000-Vtimch5)/2)-1) void TC5_ISR(void); // timer overflow interrupt
