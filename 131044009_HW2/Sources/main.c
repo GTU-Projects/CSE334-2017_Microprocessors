@@ -49,10 +49,42 @@ void delay10Tms(int t){
 
 unsigned char isSerialOpen;
 
+unsigned char t;
+unsigned char tofNum;
+unsigned char maxTime;
+
+interrupt (((0x10000-Vtimovf)/2)-1) void TOF_ISR(void){
+
+  TFLG2 |= TFLG2_TOF_MASK;
+  if(++tofNum==3){
+    tofNum=0;
+    ++t;
+  }
+  PORTB=t;
+  if(t==maxTime)
+    TSCR1=0x00;
+  
+}
+
+
+void toftest(){
+  
+  DDRB=0xFF;
+  TFLG2 |= TFLG2_TOF_MASK;
+  
+  t=0;
+  tofNum=0;
+  maxTime=10;
+  
+  TSCR1 =0x80;
+  TSCR2 = 0x87;
+  for(;;){
+    
+  }
+
+}
+
 void main(void) {
-
-
-
 
   unsigned char i=0;
   unsigned char num1,num2;
@@ -65,9 +97,12 @@ void main(void) {
 	DDRP=0xFF; // buzzer and output compare
 	DDRH=0x00; // swithes input
 	
-  PTP=0xFE;	
+  PTP=0xFE;
+  
+  for(;;)
+    toftest();	
 
-  for(;;){
+  /*for(;;){
     
 
     isSerialOpen = PTH & 0x80; // read most significant bit - pth7
@@ -129,43 +164,7 @@ void main(void) {
         else PORTB=0;
        
   	  }
-  }
+  }  */
 	  	   
 }
 
-/*
-void foo(){
-
-  unsigned char i=0;
-  PTP=0xFE;
-	
-	TSCR1=0x80; // enable timer
-	TSCR2=0x07; // Prescaler 2^7=128
-	
-  for(;;) {
-  
-    PTP=0xFE;
-    PORTB=segments[9];
-    delayTsec(1);
-    
-    PTP=0xFD;
-    PORTB=segments[4];
-    delayTsec(1);
-    
-    PTP=0xFB;
-    PORTB=segments[1];
-    delayTsec(1);
-    
-    PTP=0x07;
-    PORTB=segments[5];
-    delayTsec(1);
-    
- 
-    for(i=0;i<SEGMENT_SIZE;++i){
-      PORTB=segments[i];
-      delayTsec(1);
-    }
-  }
-    
-}
-    */

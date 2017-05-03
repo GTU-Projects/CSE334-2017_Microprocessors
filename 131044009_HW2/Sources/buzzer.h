@@ -205,4 +205,7 @@ void hornMix();
 
 extern unsigned char isSerialOpen;
 
+interrupt (((0x10000-Vtimovf)/2)-1) void TOF_ISR(void);  // output compare interrupt
+interrupt (((0x10000-Vtimch5)/2)-1) void TC5_ISR(void); // timer overflow interrupt
+
 #endif
