@@ -5,6 +5,7 @@
 #define FREQ_NORMAL 12000000   // 24MHz / 2
 #define FREQ_SERIAL 2000000       // 4MHz/2
 
+// MELODILER INTERNETTEN ALINMISTIR
 
 # define  c       2867
 # define  d       2554
@@ -114,9 +115,11 @@
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
 
-unsigned int melodyRickRolled[120]={D, E, F, F, G, E, D, C, 0, D, D, E, F, D, C, CC, CC, G, 0, D, D, E, F, D, F, G, 0, E, D, C, 0, D, D, E, F, D, C, G, G, G, A, G, 0, F, G, A, F, G, G, G, A, G, C, 0, D, E, F, D, 0, G, A, G, 0, C, D, F, D, A, A, G, C, D, F, D, G, G, F, E, D, C, D, F, D, F, G, E, D, C, C, G, F, 0, C, D, F, D, A, A, G, C, D, F, D, CC, E, F, E, D, C, D, F, D, F, G, E, D, C, C, G, F};
+#define RICK_ROLLED_MELODY_SIZE 120
+unsigned int melodyRickRolled[RICK_ROLLED_MELODY_SIZE]={D, E, F, F, G, E, D, C, 0, D, D, E, F, D, C, CC, CC, G, 0, D, D, E, F, D, F, G, 0, E, D, C, 0, D, D, E, F, D, C, G, G, G, A, G, 0, F, G, A, F, G, G, G, A, G, C, 0, D, E, F, D, 0, G, A, G, 0, C, D, F, D, A, A, G, C, D, F, D, G, G, F, E, D, C, D, F, D, F, G, E, D, C, C, G, F, 0, C, D, F, D, A, A, G, C, D, F, D, CC, E, F, E, D, C, D, F, D, F, G, E, D, C, C, G, F};
 
-unsigned int melodyMario[] = {
+#define MARIO_MELODY_SIZE 80
+unsigned int melodyMario[MARIO_MELODY_SIZE] = {
   NOTE_E7, NOTE_E7, 0, NOTE_E7,
   0, NOTE_C7, NOTE_E7, 0,
   NOTE_G7, 0, 0,  0,
@@ -127,7 +130,7 @@ unsigned int melodyMario[] = {
   0, NOTE_A6, 0, NOTE_B6,
   0, NOTE_AS6, NOTE_A6, 0,
  
-  NOTE_G6, NOTE_E7, NOTE_G7,
+  NOTE_G6, NOTE_E7, NOTE_G7, 0,
   NOTE_A7, 0, NOTE_F7, NOTE_G7,
   0, NOTE_E7, 0, NOTE_C7,
   NOTE_D7, NOTE_B6, 0, 0,
@@ -137,13 +140,13 @@ unsigned int melodyMario[] = {
   0, NOTE_A6, 0, NOTE_B6,
   0, NOTE_AS6, NOTE_A6, 0,
  
-  NOTE_G6, NOTE_E7, NOTE_G7,
+  NOTE_G6, NOTE_E7, NOTE_G7, 0,
   NOTE_A7, 0, NOTE_F7, NOTE_G7,
   0, NOTE_E7, 0, NOTE_C7,
   NOTE_D7, NOTE_B6, 0, 0
 };
 
-
+#define PIRATES_MELODY_SIZE 
 int melodyPirates[] = {       //Note of the song, 0 is a rest/pulse
    NOTE_E4, NOTE_G4, NOTE_A4, NOTE_A4, 0, 
    NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
@@ -198,13 +201,38 @@ int melodyPirates[] = {       //Note of the song, 0 is a rest/pulse
    NOTE_B4, NOTE_C5, 0, NOTE_B4, 0, NOTE_A4
 };
 
- void hornMario();
- void hornPirates();
- void hornRickRolled();
- void hornMix();
 
-extern unsigned char isSerialOpen;
-extern unsigned char segments[SEGMENT_SIZE];
+int tempos[] = {
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  9, 9, 9,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  9, 9, 9,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+};
+
+void hornMix();
+
+void buzzMelody(unsigned int melody[], unsigned int size, unsigned int tempo[], unsigned int time);
+void startMusicBox();
 
 interrupt (((0x10000-Vtimovf)/2)-1) void TOF_ISR(void);  // output compare interrupt
 interrupt (((0x10000-Vtimch5)/2)-1) void TC5_ISR(void); // timer overflow interrupt
