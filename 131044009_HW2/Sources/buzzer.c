@@ -16,6 +16,7 @@ void MSDelay(unsigned int itime)
 
 unsigned char isSerialOpen;
 
+unsigned int counter;
 unsigned int freq=0;
 unsigned int toggleState=0;
 unsigned int currentTone=0;
@@ -42,7 +43,7 @@ interrupt (((0x10000-Vtimovf)/2)-1) void TOF_ISR(void){
   ++tofNum;
   
   //PORTB=t;
-  if(tofNum==366){
+  if(tofNum==counter){
     tofNum=0;
     ++t;
   }
@@ -65,7 +66,15 @@ void buzzMelody(unsigned int melody[],unsigned int size, unsigned int tempo[], u
   toggleState=0;
   currentTone=0; 
 
-  freq = FREQ_NORMAL/melody[currentTone];
+  if(isSerialOpen){
+    freq = FREQ_SERIAL/melody[currentTone];
+    counter=62; 
+  }
+  else{
+    
+    freq = FREQ_NORMAL/melody[currentTone];
+    counter=366;
+  }
 
   TFLG2 |= TFLG2_TOF_MASK;
   TC5=TCNT+ freq;        
@@ -79,9 +88,15 @@ void buzzMelody(unsigned int melody[],unsigned int size, unsigned int tempo[], u
     PORTB=segments[t];
     //PORTB=currentTone;
     if(melody[currentTone]!=0){
-      freq = FREQ_NORMAL/melody[currentTone];
+      if(isSerialOpen)
+        freq = FREQ_SERIAL/melody[currentTone];
+      else
+        freq = FREQ_NORMAL/melody[currentTone];
+
     }
-    MSDelay((1000/12)*15/10);  
+    if(isSerialOpen)
+      MSDelay((1000/12)*10/10); 
+    else MSDelay((1000/12)*15/10);
     ++currentTone;
     if(currentTone>=size)
       currentTone=0; 
@@ -96,17 +111,54 @@ void buzzMelody(unsigned int melody[],unsigned int size, unsigned int tempo[], u
 
 void hornMix(){
   
- // char inputMsg[]="\n\r-------------\n\rEnter song ID.\n\r00.All Three song.\n\r01.Mario\n\r10.Pirates\n\r11.Rick Roll\n\rInput:";
- // char invCmdMsg[]="\n\r-------------\n\rInvalid Sond ID!!\n\r";
+  
 
 }
 
+char inputMsg[]="\n\r-------------\n\rEnter song ID.\n\r00.All Three song.\n\r01.Mario\n\r10.Pirates\n\r11.Rick Roll\n\rInput:";
+char invCmdMsg[]="\n\r-------------\n\rInvalid Sond ID!!\n\r";
+
+
+
+void choiceMusic(unsigned int val){
+
+  unsigned int size;
+  switch(val){
+    
+    case 0:{
+      PORTB=segments[0];
+      buzzMelody(melodyMario,MARIO_MELODY_SIZE,tempos,5);
+      size = sizeof(melodyPirates)/sizeof(int);
+      buzzMelody(melodyPirates,size,tempos,5);
+      buzzMelody(melodyRickRolled,RICK_ROLLED_MELODY_SIZE,tempos,5);   
+    } break;
+    case 1:{
+      PORTB=segments[1];
+  	  buzzMelody(melodyMario,MARIO_MELODY_SIZE,tempos,15);
+      
+    } break;
+    case 2:{
+      PORTB=segments[2];
+      size = sizeof(melodyPirates)/sizeof(int);
+      buzzMelody(melodyPirates,size,tempos,15);
+    } break;
+    case 3:{
+      PORTB=segments[3];
+  	  buzzMelody(melodyRickRolled,RICK_ROLLED_MELODY_SIZE,tempos,15);
+    } break;
+  
+  
+  }
+}
 
 void startMusicBox(){
 
   unsigned int num1,num2;
+  unsigned int i;
+  unsigned int size;
   DDRB=0xFF;
   DDRP=0xFF;
+  
  
 
   for(;;){
@@ -120,8 +172,8 @@ void startMusicBox(){
   	  
   	if(isSerialOpen){
   	
-  	    /*SCI0BDH=0x0;  // set baudrate 9600
-        SCI0BDL=26;
+  	    SCI0BDH=0x0;  
+        SCI0BDL=26;  // set baudrate 9600
         SCI0CR1=0x0;
         SCI0CR2=0x0C; // receive-transmit enable
         SCI0DRH=0x0;  // data high empty
@@ -138,39 +190,25 @@ void startMusicBox(){
   	    num2 = SCI0DRL;
   	    
   	    if(num1=='0' && num2=='0'){  // all
-  	      PORTB=segments[0];
-  	      hornMix();
+  	      choiceMusic(0);
   	    }else if(num1=='0' && num2=='1'){  // mario
-  	      PORTB=segments[1];
-  	      hornMario(15);
+  	      choiceMusic(1);
   	    }else if(num1=='1' && num2=='0'){  // pirates
-  	      PORTB=segments[2];
-  	      hornPirates(15);
+  	      choiceMusic(2);
   	    }else if(num1=='1' && num2=='1'){  // rick rolled
-  	      PORTB=segments[3];
-  	      hornRickRolled(15);
+  	      choiceMusic(3);
   	    }else{ // invalid input              
   	      for(i=0;i<strlen(invCmdMsg);++i){
   	        while(!(SCI0SR1 & SCI0SR1_TDRE_MASK));
   	        SCI0DRL= invCmdMsg[i];
   	      }
   	      PORTB=0x0;
-  	    }   */
+  	    }
   	    
   	  }else{
-  	    int size;
     	  int val = PTH & 0x3; // just take 0-1 pth switches
         PORTB=segments[val];
-        if(val==0)
-          hornMix();
-        else if(val==1){
-          buzzMelody(melodyMario,MARIO_MELODY_SIZE,tempos,5);
-        }else if(val==2){
-          size = sizeof(melodyPirates)/sizeof(int);
-          buzzMelody(melodyPirates,size,tempos,5);
-        }else if(val==3){
-          buzzMelody(melodyRickRolled,RICK_ROLLED_MELODY_SIZE,tempos,5);
-        }else PORTB=0;
+        choiceMusic(val);
   	  }
   }
    
